@@ -30,6 +30,7 @@
   cursor: pointer;
 }
 
-.autocomplete-option:hover {
+.autocomplete-option:hover,
+.autocomplete-option.selected {
   background-color: #f2f2f2;
 }

@@ -5,16 +5,22 @@ const AutocompleteInput = ({ options }) => {
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [showOptions, setShowOptions] = useState(false);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
   const handleClickOutside = (event) => {
-    if (inputRef.current && !inputRef.current.contains(event.target)) {
+    if (
+      inputRef.current &&
+      !inputRef.current.contains(event.target) &&
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target)
+    ) {
       setShowOptions(false);
     }
   };
@@ -35,11 +41,40 @@ const AutocompleteInput = ({ options }) => {
     setInputValue(value);
     setFilteredOptions([]);
     setShowOptions(false);
+    inputRef.current.focus();
   };
 
-  const handleInputClick = (value) => {
-    setFilteredOptions(options);
+  const handleInputFocus = () => {
     setShowOptions(true);
+    setFilteredOptions(options);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (filteredOptions.length > 0) {
+        const currentIndex = filteredOptions.indexOf(inputValue);
+        const nextIndex =
+          currentIndex === filteredOptions.length - 1 ? 0 : currentIndex + 1;
+        setInputValue(filteredOptions[nextIndex]);
+      }
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (filteredOptions.length > 0) {
+        const currentIndex = filteredOptions.indexOf(inputValue);
+        const prevIndex =
+          currentIndex === 0 ? filteredOptions.length - 1 : currentIndex - 1;
+        setInputValue(filteredOptions[prevIndex]);
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const matchingOption = filteredOptions.find(
+        (option) => option === inputValue
+      );
+      if (matchingOption) {
+        handleOptionClick(matchingOption);
+      }
+    }
   };
 
   return (
@@ -48,18 +83,31 @@ const AutocompleteInput = ({ options }) => {
         type="text"
         value={inputValue}
         onChange={handleInputChange}
-        onClick={handleInputClick}
+        onFocus={handleInputFocus}
+        onKeyDown={handleKeyDown}
         placeholder="Type here..."
         className="autocomplete-input"
         ref={inputRef}
+        aria-autocomplete="list"
+        aria-expanded={showOptions}
+        aria-owns="autocomplete-options"
       />
-      {showOptions && filteredOptions.length > 0 && (
-        <ul className="autocomplete-dropdown">
+      {showOptions && (
+        <ul
+          id="autocomplete-options"
+          className="autocomplete-dropdown"
+          role="listbox"
+          ref={dropdownRef}
+        >
           {filteredOptions.map((option, index) => (
             <li
               key={index}
               onClick={() => handleOptionClick(option)}
-              className="autocomplete-option"
+              className={`autocomplete-option ${
+                option === inputValue ? 'selected' : ''
+              }`}
+              role="option"
+              aria-selected={option === inputValue}
             >
               {option}
             </li>

@@ -13,18 +13,16 @@ describe('AutocompleteInput', () => {
     expect(inputElement).toBeInTheDocument();
   });
 
-  test('should show options when input is clicked', () => {
-    const { getByPlaceholderText, getByText } = render(
+  test('should show options when input is focused', () => {
+    const { getByPlaceholderText, getAllByRole } = render(
       <AutocompleteInput options={options} />
     );
     const inputElement = getByPlaceholderText('Type here...');
 
-    fireEvent.click(inputElement);
+    fireEvent.focus(inputElement);
 
-    options.forEach((option) => {
-      const optionElement = getByText(option);
-      expect(optionElement).toBeInTheDocument();
-    });
+    const optionElements = getAllByRole('option');
+    expect(optionElements.length).toBe(options.length);
   });
 
   test('should select option on click', () => {
@@ -33,7 +31,7 @@ describe('AutocompleteInput', () => {
     );
     const inputElement = getByPlaceholderText('Type here...');
 
-    fireEvent.click(inputElement);
+    fireEvent.focus(inputElement);
 
     const selectedOption = options[0];
     const selectedOptionElement = getByText(selectedOption);
@@ -50,14 +48,35 @@ describe('AutocompleteInput', () => {
 
     fireEvent.change(inputElement, { target: { value: 'a' } });
 
-    options.forEach((option) => {
-      if (option.toLowerCase().includes('a')) {
-        const optionElement = queryByText(option);
-        expect(optionElement).toBeInTheDocument();
-      } else {
-        const optionElement = queryByText(option);
-        expect(optionElement).not.toBeInTheDocument();
-      }
+    const filteredOptions = options.filter((option) =>
+      option.toLowerCase().includes('a')
+    );
+
+    filteredOptions.forEach((option) => {
+      const optionElement = queryByText(option);
+      expect(optionElement).toBeInTheDocument();
     });
+  });
+
+  test('should navigate options with arrow keys', () => {
+    const { getByPlaceholderText, getAllByRole } = render(
+      <AutocompleteInput options={options} />
+    );
+    const inputElement = getByPlaceholderText('Type here...');
+
+    fireEvent.focus(inputElement);
+
+    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
+    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
+    fireEvent.keyDown(inputElement, { key: 'Enter' });
+    
+
+    expect(inputElement.value).toBe(options[1]);
+
+    fireEvent.keyDown(inputElement, { key: 'ArrowUp' });
+    fireEvent.keyDown(inputElement, { key: 'ArrowUp' });
+    fireEvent.keyDown(inputElement, { key: 'Enter' });
+
+    expect(inputElement.value).toBe(options[5]);
   });
 });

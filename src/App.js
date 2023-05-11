@@ -1,5 +1,6 @@
 import React from 'react';
 import AutocompleteInput from './AutocompleteInput';
+import Title from './Title';
 
 const App = () => {
   const options = [
@@ -29,6 +30,8 @@ const App = () => {
     <div>
       <h1>Autocomplete Input Example</h1>
       <AutocompleteInput options={options} />
+
+      <Title/>
     </div>
   );
 };
