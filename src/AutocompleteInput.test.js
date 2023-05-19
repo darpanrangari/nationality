@@ -1,82 +1,95 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import AutocompleteInput from './AutocompleteInput';
 
 describe('AutocompleteInput', () => {
-  const options = ['Apple', 'Banana', 'Cherry', 'Grapes', 'Lemon', 'Orange'];
+  const options = [
+    { name: 'Apple' },
+    { name: 'Banana' },
+    { name: 'Cherry' },
+    { name: 'Durian' },
+    { name: 'plum' },
+    { name: 'strawberry' },
+    { name: 'orange' },
+    { name: 'Rubrab' }
+  ];
 
-  test('should render input field', () => {
-    const { getByPlaceholderText } = render(
-      <AutocompleteInput options={options} />
-    );
-    const inputElement = getByPlaceholderText('Type here...');
+  test('renders input element', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
     expect(inputElement).toBeInTheDocument();
   });
 
-  test('should show options when input is focused', () => {
-    const { getByPlaceholderText, getAllByRole } = render(
-      <AutocompleteInput options={options} />
-    );
-    const inputElement = getByPlaceholderText('Type here...');
-
-    fireEvent.focus(inputElement);
-
-    const optionElements = getAllByRole('option');
-    expect(optionElements.length).toBe(options.length);
+  test('shows options on input focus', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
+    userEvent.click(inputElement);
+    const dropdownElement = screen.getByRole('listbox');
+    expect(dropdownElement).toBeInTheDocument();
   });
 
-  test('should select option on click', () => {
-    const { getByPlaceholderText, getByText } = render(
-      <AutocompleteInput options={options} />
-    );
-    const inputElement = getByPlaceholderText('Type here...');
-
-    fireEvent.focus(inputElement);
-
-    const selectedOption = options[0];
-    const selectedOptionElement = getByText(selectedOption);
-    fireEvent.click(selectedOptionElement);
-
-    expect(inputElement.value).toBe(selectedOption);
+  test('filters options based on input value', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
+    userEvent.click(inputElement);
+    userEvent.type(inputElement, 'a');
+    const dropdownElement = screen.getByRole('listbox');
+    const appleOption = screen.getByText('Apple');
+    const bananaOption = screen.getByText('Banana');
+    expect(dropdownElement).toBeInTheDocument();
+    expect(appleOption).toBeInTheDocument();
+    expect(bananaOption).toBeInTheDocument();
   });
 
-  test('should filter options based on input value', () => {
-    const { getByPlaceholderText, queryByText } = render(
+  test('selects option on click', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
+    userEvent.click(inputElement);
+    userEvent.type(inputElement, 'ap');
+    const appleOption = screen.getByText('Apple');
+    userEvent.click(appleOption);
+    expect(inputElement.value).toBe('Apple');
+  });
+  
+  test('selects option on enter key press', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
+    userEvent.click(inputElement);
+    userEvent.type(inputElement, 'ch');
+    userEvent.keyboard('[arrowdown]') 
+    userEvent.type(inputElement, '{enter}');
+    console.log('--------------',inputElement)
+
+    expect(inputElement.value).toBe('Cherry');
+  });
+  
+  test('navigates options using arrow keys', () => {
+    const { getByPlaceholderText, getByRole } = render(
       <AutocompleteInput options={options} />
     );
-    const inputElement = getByPlaceholderText('Type here...');
 
-    fireEvent.change(inputElement, { target: { value: 'a' } });
+    const input = getByPlaceholderText('Type here...');
+    userEvent.click(input);
+    userEvent.type(input, 'a');
 
-    const filteredOptions = options.filter((option) =>
-      option.toLowerCase().includes('a')
-    );
+    userEvent.keyboard('{ArrowDown}');
+    expect(getByRole('option', { name: 'Apple' })).toHaveClass('selected');
 
-    filteredOptions.forEach((option) => {
-      const optionElement = queryByText(option);
-      expect(optionElement).toBeInTheDocument();
-    });
+    userEvent.keyboard('{ArrowDown}');
+    expect(getByRole('option', { name: 'Banana' })).toHaveClass('selected');
+
+    userEvent.keyboard('{ArrowUp}');
+    expect(getByRole('option', { name: 'Apple' })).toHaveClass('selected');
   });
 
-  test('should navigate options with arrow keys', () => {
-    const { getByPlaceholderText, getAllByRole } = render(
-      <AutocompleteInput options={options} />
-    );
-    const inputElement = getByPlaceholderText('Type here...');
+  test('closes dropdown when clicked outside', () => {
+    render(<AutocompleteInput options={options} />);
+    const inputElement = screen.getByPlaceholderText('Type here...');
+    userEvent.click(inputElement);
+    const dropdownElement = screen.getByRole('listbox');
+    fireEvent.mouseDown(document.body);
 
-    fireEvent.focus(inputElement);
-
-    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
-    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
-    fireEvent.keyDown(inputElement, { key: 'Enter' });
-    
-
-    expect(inputElement.value).toBe(options[1]);
-
-    fireEvent.keyDown(inputElement, { key: 'ArrowUp' });
-    fireEvent.keyDown(inputElement, { key: 'ArrowUp' });
-    fireEvent.keyDown(inputElement, { key: 'Enter' });
-
-    expect(inputElement.value).toBe(options[5]);
+    expect(dropdownElement).not.toBeInTheDocument();
   });
 });
