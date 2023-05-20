@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './index.css'; // Import the CSS file for styling
 
-const AutocompleteInput = ({ options }) => {
+const AutocompleteInput = (props) => {
   const [inputValue, setInputValue] = useState('');
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [showOptions, setShowOptions] = useState(false);
   const inputRef = useRef(null);
-const dropdownRef = useRef(null);
-const optionRefs = useRef([]);
-
+  const dropdownRef = useRef(null);
+  const optionRefs = useRef([]);
+  const { options, onChangeHandler, inputElement} = props
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -41,6 +41,9 @@ const optionRefs = useRef([]);
   };
 
   const handleOptionClick = (option, index) => {
+    if(onChangeHandler){
+      onChangeHandler(option)
+    }
     setInputValue(option.name);
     setFilteredOptions([]);
     setShowOptions(false);
@@ -165,6 +168,18 @@ const optionRefs = useRef([]);
 
   return (
     <div className="autocomplete-container">
+      {React.isValidElement(inputElement) ? React.cloneElement(inputElement,{
+        value:inputValue,
+        ref:inputRef,
+        error:props?.error,
+        ...props,
+        onChange:handleInputChange,
+        onFocus: handleInputFocus,
+        onKeyDown: handleKeyDown,
+        placeholder:'Type hear...',
+        className:'autocomplete-input',
+        'data-testid': 'autocomplete-input',
+      }):
       <input
         type="text"
         value={inputValue}
@@ -177,13 +192,15 @@ const optionRefs = useRef([]);
         aria-autocomplete="list"
         aria-expanded={showOptions}
         aria-owns="autocomplete-options"
-      />
+        data-testid='autocomplete-input'
+      />}
       {showOptions && (
         <ul
         id="autocomplete-options"
         className="autocomplete-dropdown"
         role="listbox"
         ref={dropdownRef}
+        data-testid ='autocomplete-dropdown'
       >
         {filteredOptions.map((option, index) => (
           <li
