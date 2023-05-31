@@ -2,13 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import './index.css'; // Import the CSS file for styling
 
 const AutocompleteInput = (props) => {
-  const [inputValue, setInputValue] = useState('');
+  const { options, onChange, inputElement, value, name} = props
+
+  const [inputValue, setInputValue] = useState({
+    name: value?.name || '',
+    value: value?.value || ''
+  });
+  const [activeOption, setActiveOption] = useState('');
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [showOptions, setShowOptions] = useState(false);
+  const [hasMactchingOptions, setHasMactchingOptions] = useState(true);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   const optionRefs = useRef([]);
-  const { options, onChangeHandler, inputElement} = props
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -16,6 +22,13 @@ const AutocompleteInput = (props) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    setInputValue({
+      name: value?.name || '',
+      value: value?.value || ''
+    });
+  }, [value]);
 
   const handleClickOutside = (event) => {
     if (
@@ -30,7 +43,7 @@ const AutocompleteInput = (props) => {
 
   const handleInputChange = (event) => {
     const value = event.target.value;
-    setInputValue(value);
+    setInputValue({...inputValue,name:value});
 
     // Filter options based on input value
     const filtered = options.filter((option) =>
@@ -38,13 +51,14 @@ const AutocompleteInput = (props) => {
     );
     setFilteredOptions(filtered);
     setShowOptions(true);
+    setHasMactchingOptions(filtered.length > 0)
   };
 
   const handleOptionClick = (option, index) => {
-    if(onChangeHandler){
-      onChangeHandler(option)
+    if(onChange){
+      onChange(option)
     }
-    setInputValue(option.name);
+    setInputValue(option);
     setFilteredOptions([]);
     setShowOptions(false);
     inputRef.current.focus();
@@ -126,10 +140,10 @@ const AutocompleteInput = (props) => {
       event.preventDefault();
       if (filteredOptions.length > 0) {
         const currentIndex = filteredOptions.findIndex(
-          (option) => option.name === inputValue
+          (option) => option.name === activeOption
         );
         const nextIndex = (currentIndex + direction + filteredOptions.length) % filteredOptions.length;
-        setInputValue(filteredOptions[nextIndex].name);
+        setActiveOption(filteredOptions[nextIndex].name);
   
         // Scroll to the selected option
         if (dropdownRef.current && optionRefs[nextIndex]) {
@@ -157,7 +171,7 @@ const AutocompleteInput = (props) => {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       const matchingOption = filteredOptions.find(
-        (option) => option.name === inputValue
+        (option) => option.name === activeOption
       );
       if (matchingOption) {
         handleOptionClick(matchingOption);
@@ -182,9 +196,12 @@ const AutocompleteInput = (props) => {
       }):
       <input
         type="text"
-        value={inputValue}
+        
+        name={name || 'autocomplete-input'}
+        {...props}
+        value={inputValue?.name}
         onChange={handleInputChange}
-        onFocus={handleInputFocus}
+       // onFocus={handleInputFocus}
         onKeyDown={handleKeyDown}
         placeholder="Type here..."
         className="autocomplete-input"
@@ -202,7 +219,7 @@ const AutocompleteInput = (props) => {
         ref={dropdownRef}
         data-testid ='autocomplete-dropdown'
       >
-        {filteredOptions.map((option, index) => (
+        {hasMactchingOptions ? (filteredOptions.map((option, index) => (
           <li
             key={index}
             onClick={() => handleOptionClick(option, index)}
@@ -215,7 +232,10 @@ const AutocompleteInput = (props) => {
           >
             {option.name}
           </li>
-        ))}
+        ))) : 
+        (
+          <li className='autocomplete-option'> no matching options</li>
+        )}
       </ul>
       
       )}
@@ -223,4 +243,92 @@ const AutocompleteInput = (props) => {
   );
 };
 
-export default AutocompleteInput;
+// export default AutocompleteInput;
+
+
+// import React from 'react';
+// import { useForm, Controller, useFieldArray } from 'react-hook-form';
+// import Nationality from './Nationality';
+// import * as yup from 'yup';
+
+// const schema = yup.object().shape({
+//   nationalities: yup.array().of(yup.string().required('Nationality is required')),
+// });
+
+// const options = [
+//   { name: 'Afghanistan', value: 'AF' },
+//   { name: 'Albania', value: 'AL' },
+//   { name: 'Algeria', value: 'DZ' },
+//   // ...rest of the country options
+// ];
+
+// const FormComponent = () => {
+//   const { control, handleSubmit, formState: { errors } } = useForm({
+//     resolver: yupResolver(schema), // Apply validation schema
+//   });
+//   const { fields, append, remove } = useFieldArray({
+//     control,
+//     name: 'nationalities',
+//     max: 5,
+//     shouldUnregister: true,
+//   });
+
+//   const onSubmit = (data) => {
+//     console.log(data);
+//   };
+
+//   return (
+//     <form onSubmit={handleSubmit(onSubmit)}>
+//       {fields.map((field, index) => (
+//         <div key={field.id}>
+//           <Nationality control={control} options={options} />
+//           {index === 0 && errors.nationalities && (
+//             <p>{errors.nationalities.message}</p>
+//           )}
+//           <button type="button" onClick={() => remove(index)}>
+//             Remove
+//           </button>
+//         </div>
+//       ))}
+//       {fields.length < 5 && (!fields.length || !errors.nationalities) && (
+//         <button type="button" onClick={() => append({})}>
+//           Add Nationality
+//         </button>
+//       )}
+//       <button type="submit">Submit</button>
+//     </form>
+//   );
+// };
+
+// export default FormComponent;
+
+// import React from 'react';
+// import { Controller, ErrorMessage } from 'react-hook-form';
+// import AutocompleteInput from './AutocompleteInput';
+
+// const Nationality = ({ control, options }) => {
+//   return (
+//     <div>
+//       <Controller
+//         control={control}
+//         name="nationalities"
+//         render={({ field }) => (
+//           <AutocompleteInput
+//             options={options}
+//             value={field.value}
+//             onChange={field.onChange}
+//             inputElement={<input />} // Customize the input element if needed
+//           />
+//         )}
+//       />
+//       <ErrorMessage
+//         errors={control.formState.errors}
+//         name="nationalities"
+//         as={<p>{errors => errors && errors.message}</p>}
+//       />
+//     </div>
+//   );
+// };
+
+// export default Nationality;
+
