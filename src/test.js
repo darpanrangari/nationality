@@ -1,61 +1,117 @@
-import { fetch } from '../../utils/service';
+import { fetch } from '../utils/service';
+import { SAVINGS_SERVICES } from '../paths';
+import {
+  ErrorResponse,
+  InitiateResponse,
+  PostalAddress,
+  Request,
+} from './types/api.types';
 import {
   makeRequest,
+  updateVersionUrl,
   appConfigRequest,
+  getPostalAddressDetails,
   clearSessionRequest,
-  getPostalAddressDetails
-} from '../apl';
+} from './your-module';
 
-export const emptyPromise = new Promise(() => {});
-
-jest.mock('../../utils/service', () => ({
-  fetch: jest.fn()
+jest.mock('../utils/service', () => ({
+  fetch: jest.fn(),
 }));
 
-describe('API', () => {
-  beforeEach(() => {
-    global.window.location = { href: '' } as Location;
+describe('Your Module', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('test makeRequest rejects correctly when responseText property is in error', () => {
-    const xhrError = { responseText: '{"message":"error"}' };
-    (fetch as jest.Mock).mockImplementation(() => Promise.reject(xhrError));
-
-    const url = '/s';
-    const data = 'test';
-    const headers = { 'Cache-Control': 'no-cache, no-store' };
-
-    return makeRequest('GET', url, data, headers).catch((e) => {
-      expect(e.message).toEqual('error');
-      (fetch as jest.Mock).mockReset();
+  it('should make a request correctly', async () => {
+    const mockResponse = { success: true };
+    const mockFetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(mockResponse),
     });
-  });
+    fetch.mockImplementation(mockFetch);
 
-  it('test makeRequest rejects correctly when no responseText property is in error', () => {
-    const xhrError = new Error();
-    (fetch as jest.Mock).mockImplementation(() => Promise.reject(xhrError));
+    const method = 'GET';
+    const url = '/api/endpoint';
+    const data = { key: 'value' };
+    const headers = { 'Content-Type': 'application/json' };
 
-    const url = '/s';
-    const data = 'test';
-    const headers = { 'Cache-Control': 'no-cache, no-store' };
-
-    return makeRequest('GET', url, data, headers).catch(() => {
-      (fetch as jest.Mock).mockReset();
+    const response = await makeRequest<InitiateResponse | ErrorResponse>({
+      method,
+      url,
+      data,
+      headers,
     });
+
+    expect(mockFetch).toHaveBeenCalledWith(method, {
+      url,
+      contentType: 'application/json',
+      data,
+      headers,
+    });
+    expect(response).toEqual(mockResponse);
   });
 
-  it('tests appConfigRequest', () => {
-    const response = appConfigRequest();
-    expect(response).toEqual(emptyPromise);
+  it('should update the version in the URL correctly', () => {
+    const url = '/api/{version}/endpoint';
+    const version = 'v1';
+    const updatedUrl = updateVersionUrl(url, version);
+    expect(updatedUrl).toBe('/api/v1/endpoint');
   });
 
-  it('tests clearSessionRequest', () => {
-    const response = clearSessionRequest();
-    expect(response).toEqual(emptyPromise);
+  it('should make an appConfig request correctly', async () => {
+    const mockResponse = { config: {} };
+    const mockMakeRequest = jest
+      .fn()
+      .mockResolvedValue(mockResponse);
+    makeRequest.mockImplementation(mockMakeRequest);
+
+    const response = await appConfigRequest();
+
+    expect(mockMakeRequest).toHaveBeenCalledWith({
+      method: 'GET',
+      url: paths.initiateUrl,
+    });
+    expect(response).toEqual(mockResponse);
   });
 
-  it('tests getPostalAddressDetails', () => {
-    const response = getPostalAddressDetails();
-    expect(response).toEqual(emptyPromise);
+  it('should get postal address details correctly', async () => {
+    const mockResponse = [{ address: '123 Street' }];
+    const mockMakeRequest = jest
+      .fn()
+      .mockResolvedValue(mockResponse);
+    makeRequest.mockImplementation(mockMakeRequest);
+
+    const apiVersions = {
+      [SAVINGS_SERVICES]: 'v1',
+      'POSTAL ADDRESS SERVICE': 'v2',
+    };
+    const postcode = '12345';
+
+    const response = await getPostalAddressDetails(apiVersions, postcode);
+
+    expect(mockMakeRequest).toHaveBeenCalledWith({
+      method: 'GET',
+      url: updateVersionUrl(
+        paths.postalAddress,
+        apiVersions[SAVINGS_SERVICES].replace('(postcode)', postcode)
+      ),
+    });
+    expect(response).toEqual(mockResponse);
+  });
+
+  it('should make a clear session request correctly', async () => {
+    const mockResponse = { success: true };
+    const mockMakeRequest = jest
+      .fn()
+      .mockResolvedValue(mockResponse);
+    makeRequest.mockImplementation(mockMakeRequest);
+
+    const response = await clearSessionRequest();
+
+    expect(mockMakeRequest).toHaveBeenCalledWith({
+      method: 'GET',
+      url: paths.initiateUri,
+    });
+    expect(response).toEqual(mockResponse);
   });
 });
