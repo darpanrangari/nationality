@@ -68,3 +68,78 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+Sub CreateRiddlePresentation()
+    ' Create a variable to represent PowerPoint, a presentation, and a slide.
+    Dim ppApp As Object
+    Dim ppPres As Object
+    Dim ppSlide As Object
+    Dim slideIndex As Integer
+
+    ' Create an instance of PowerPoint
+    Set ppApp = CreateObject("PowerPoint.Application")
+    ' Make PowerPoint Visible
+    ppApp.Visible = True
+    ' Add a new presentation
+    Set ppPres = ppApp.Presentations.Add
+
+    ' Array of riddles and their answers
+    Dim riddles As Variant, answers As Variant
+    riddles = Array("I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", _
+                    "The more of this there is, the less you see. What is it?", _
+                    "I’m light as a feather, yet the strongest person can’t hold me for five minutes. What am I?", _
+                    "I can be cracked, made, told, and played. What am I?", _
+                    "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?", _
+                    "What has keys but can’t open locks?", _
+                    "What has to be broken before you can use it?", _
+                    "I’m tall when I’m young, and I’m short when I’m old. What am I?", _
+                    "What has an eye but can not see?", _
+                    "What gets wetter as it dries?", _
+                    "I fly without wings, I cry without eyes. What am I?", _
+                    "What comes once in a minute, twice in a moment, but never in a thousand years?", _
+                    "I shrink smaller every time I take a bath. What am I?", _
+                    "You can catch me but cannot throw me. What am I?", _
+                    "I am not alive, but I grow; I don't have lungs, but I need air; I don’t have a mouth, but water kills me. What am I?")
+                    
+    answers = Array("An echo", _
+                    "Darkness", _
+                    "Breath", _
+                    "A joke", _
+                    "A map", _
+                    "A piano", _
+                    "An egg", _
+                    "A candle", _
+                    "A needle", _
+                    "A towel", _
+                    "A cloud", _
+                    "The letter 'M'", _
+                    "A bar of soap", _
+                    "A cold", _
+                    "Fire")
+
+    ' Create slides for each riddle and answer
+    For i = 0 To UBound(riddles)
+        ' Add a new slide for the Riddle
+        Set ppSlide = ppPres.Slides.Add(i * 2 + 1, 1) ' 1 denotes ppLayoutText
+        ppSlide.Shapes(1).TextFrame.TextRange.Text = "Riddle " & (i + 1)
+        ppSlide.Shapes(2).TextFrame.TextRange.Text = riddles(i)
+
+        ' Add a new slide for the Answer
+        Set ppSlide = ppPres.Slides.Add(i * 2 + 2, 1) ' 1 denotes ppLayoutText
+        ppSlide.Shapes(1).TextFrame.TextRange.Text = "Answer " & (i + 1)
+        ppSlide.Shapes(2).TextFrame.TextRange.Text = answers(i)
+    Next i
+
+    ' Optionally, apply a consistent style or transitions
+    For Each ppSlide In ppPres.Slides
+        ppSlide.FollowMasterBackground = msoFalse
+        ppSlide.Background.Fill.PresetTextured msoTextureParchment
+    Next ppSlide
+    
+    ' Clean up
+    Set ppSlide = Nothing
+    Set ppPres = Nothing
+    Set ppApp = Nothing
+End Sub
+
